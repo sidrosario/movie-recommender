@@ -1,0 +1,8 @@
+#Add files and folders that you want to ignore in the git repository
+venv/
+__pycache__/
+static/
+templates/
+movies.db
+runs.log
+user_requests.txt
