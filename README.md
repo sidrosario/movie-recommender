@@ -12,7 +12,7 @@ Natural language movie recommendation system using OpenAI GPT-3.5, Marqo vector 
 ## Installation
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/sidrosario/movie-recommender.git
 cd movie-recommender
 
 # Create virtual environment
