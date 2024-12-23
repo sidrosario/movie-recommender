@@ -23,10 +23,7 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 ## Configuration
-1. Create .env file
-```bash
-echo OPENAI_API_KEY=your_api_key_here > .env
-```
+1. Setup OPENAI KEY in your environment.
 
 2. Start Marqo
 ```bash
@@ -35,18 +32,17 @@ docker run -p 8882:8882 marqoai/marqo:latest
 
 ## Database Setup
 ```bash
-# Initialize database
-python database.py
+# Initialize databases
+python initialiser.py
 ```
 This will:
 - Create SQLite database
-- Load movies from CSV
-- Create vector index
+- Load movies from CSV into SQLite DB
+- Create vector index (using Marqo)
 - Import movie metadata
 
 ## Usage
-1. Start application:
+Run application:
 ```bash
 python main.py
 ```
-

@@ -1,22 +1,36 @@
 from datetime import datetime, timezone
+import logging
 import pandas as pd
 from sqlalchemy import create_engine, select,func
 from sqlalchemy.orm import sessionmaker
-from config import CSV_FILES
+from config import CSV_FILES, LOG_FILES
 from models import Base, Movie, Genre, Rating, Tag
 
+logger = logging.getLogger(__name__)
+logger.handlers.clear()
+logger.setLevel(logging.INFO)
+#Add handler if none exists
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter) 
+    logger.addHandler(handler)
 
 def init_db():
     engine = create_engine('sqlite:///movies.db')
     Base.metadata.create_all(engine)
+    logger.info("Database created successfully")
 
     Session = sessionmaker(bind=engine)
     with Session() as session:
         try:
             load_movies_from_csv(session, CSV_FILES['movies'])
+            logger.info("Movies loaded successfully")
             load_ratings_from_csv(session, CSV_FILES['ratings'])
+            logger.info("Ratings loaded successfully")
             load_tags_from_csv(session, CSV_FILES['tags'])
-            print("Data loading completed successfully")
+            logger.info("Tags loaded successfully")
+            # print("Data loading completed successfully")
         except Exception as e:
             print(f"Error loading data: {e}")
         session.close()
@@ -30,6 +44,8 @@ def load_movies_from_csv(session, csv_path):
     # Create genres first
     all_genres = set()
     for genres_str in df['genres']:
+        if genres_str == '(no genres listed)':
+            continue
         all_genres.update(genres_str.split('|'))
     
     genre_dict = {}
@@ -44,7 +60,6 @@ def load_movies_from_csv(session, csv_path):
         # Extract year from title
         year = None
         if '(' in title_with_year:
-            # print(title_with_year)
             title = title_with_year.rsplit('(', 1)[0].strip()
             year = int(title_with_year.rsplit('(', 1)[1].strip().rstrip(')'))
         else:
@@ -58,7 +73,8 @@ def load_movies_from_csv(session, csv_path):
         
         # Add genres
         for genre_name in row['genres'].split('|'):
-            movie.genres.append(genre_dict[genre_name])
+            if genre_name != '(no genres listed)':
+                movie.genres.append(genre_dict[genre_name])
         
         session.add(movie)
     
@@ -100,8 +116,7 @@ def load_tags_from_csv(session, csv_path):
 
     session.commit()
 
-def get_movies_with_metadata():
-    """Get movies with combined genres and tags as metadata"""
+def get_movies_as_documents():
     engine = create_engine('sqlite:///movies.db')
     Base.metadata.create_all(engine)
 
@@ -148,15 +163,31 @@ def get_movies_with_metadata():
         # Format results into required structure
         formatted_movies = []
         for movie in results:
-            metadata = f"{movie.genres or ''} {movie.tags or ''}".strip()
-            formatted_movies.append({
+            # metadata = f"{movie.genres or ''} {movie.tags or ''}".strip()
+            # print(f"Movie Genres: {movie.genres}", movie.genres.split(" "))
+            # print(f"Movie Tags: {movie.tags}", movie.tags.split(" "))
+            title_genres_tags = movie.title.strip()
+            genres = []
+            if(movie.genres):
+                genres = movie.genres.split(" ")
+                title_genres_tags+= " "+movie.genres
+            tags = []
+            if(movie.tags):
+                tags = movie.tags.split(" ")
+                title_genres_tags+= " "+movie.tags
+            formatted_movie = {
                 "id": str(movie.id),
+                "title_genres_tags": title_genres_tags,
                 "title": movie.title,
-                "metadata": metadata
-            })
+                "genres": genres,
+                "tags": tags
+            }
+            formatted_movies.append(formatted_movie)
+            # print(formatted_movies)
+            # logger.info(f"Added Formatted Movie: {formatted_movie}")
         
-        session.close()
-        engine.dispose()
+        # session.close()
+        # engine.dispose()
 
         return formatted_movies
 

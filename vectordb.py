@@ -1,25 +1,48 @@
+import logging
 import math
 import marqo
 from tqdm import tqdm
-from database import get_movies_with_metadata
+from database import get_movies_as_documents
+
+
+settings = {
+    "type": "structured",
+    "allFields": [
+        {"name": "id", "type": "text", "features": ["lexical_search"]},
+        {"name": "title_genres_tags", "type": "text", "features": ["lexical_search"]},
+        {"name": "title", "type": "text", "features": ["lexical_search"]},
+        {"name": "genres", "type": "array<text>", "features": ["filter","lexical_search"]},
+        {"name": "tags", "type": "array<text>", "features": ["filter","lexical_search"]},
+    ],
+    "tensorFields": ["title_genres_tags"],
+}
+
+
 
 mq = marqo.Client(url="http://localhost:8882")
-index_name = "mymovies"
-        
+index_name = "movies"
+logger = logging.getLogger(__name__)
+logger.handlers.clear()
+logger.setLevel(logging.INFO)
+#Add handler if none exists
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter) 
+    logger.addHandler(handler)
+
 def init_marqo_db():    
     try:
-        movies = get_movies_with_metadata()
     
         # Initialize client
-       
-        # Check if index exists
-        #logger.info(f"Creating index: {index_name}")
-        if index_name in mq.get_indexes():
-            print('Index already exists')
-            mq.delete_index(index_name)
+        indices = mq.get_indexes()
+        for indexMap in indices['results']:
+            print("Trying to delete index: ",indexMap['indexName'])
+            mq.index(indexMap["indexName"]).delete()
         print("Marqo indices: " , mq.get_indexes())
-        # Comment out the following line to avoid re-creating the index
-        mq.create_index(index_name)
+        mq.create_index(index_name, settings_dict=settings)
+
+        movies = get_movies_as_documents()
         add_movies_to_index(movies)
     
     except Exception as e:
@@ -29,7 +52,7 @@ def init_marqo_db():
 
 def add_movies_to_index(movies):
     # Verify movies data
-    #logger.info(f"Adding {len(movies)} documents to index")
+    logger.info(f"Adding {len(movies)} documents to index")
     batch_size = 100
     
     # Add documents with progress
@@ -39,20 +62,26 @@ def add_movies_to_index(movies):
     for i in tqdm(range(0, total_docs, batch_size), total=num_batches, desc="Indexing documents"):
         batch = movies[i:i + batch_size]
         try:
-            mq.index(index_name).add_documents(
+            result = mq.index(index_name).add_documents(
                 documents=batch,
-                tensor_fields=["metadata", "title"],
                 client_batch_size=batch_size
             )
         except Exception as e:
             print(f"Error processing batch {i//batch_size + 1}: {str(e)}")
             continue
 
-    #logger.info('Documents added successfully')
+    logger.info('Documents added successfully')
     
-def search_movies(user_keywords):
-    #logger.info(f"Searching for: {user_keywords}")
-    results = mq.index(index_name).search(user_keywords)
+def search_movies(user_keywords,filter):
+    print(mq.index(index_name).get_stats())
+    logger.info(f"Searching for q: {user_keywords}, filter: {filter}")
+    if (filter):
+        results = mq.index(index_name).search(
+        q=user_keywords,
+        filter_string=filter
+        )
+    else:
+        results = mq.index(index_name).search(user_keywords)
     
     # Debug results structure
     #logger.info(f"Found {len(results['hits'])} results")

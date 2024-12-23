@@ -3,6 +3,7 @@ venv/
 __pycache__/
 static/
 templates/
+logs/
 movies.db
 runs.log
 user_requests.txt
