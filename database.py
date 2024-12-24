@@ -6,22 +6,29 @@ from sqlalchemy.orm import sessionmaker
 from config import CSV_FILES, LOG_FILES
 from models import Base, Movie, Genre, Rating, Tag
 
-logger = logging.getLogger(__name__)
-logger.handlers.clear()
-logger.setLevel(logging.INFO)
-#Add handler if none exists
-if not logger.handlers:
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter) 
-    logger.addHandler(handler)
+def create_logger():
+    logger = logging.getLogger(__name__)
+    logger.handlers.clear()
+    logger.setLevel(logging.INFO)
+    #Add handler if none exists
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter) 
+        logger.addHandler(handler)
+    return logger
 
-def init_db():
-    engine = create_engine('sqlite:///movies.db')
+def init_db(location='sqlite:///movies.db'):
+    engine = create_engine(location)
     Base.metadata.create_all(engine)
+    logger = create_logger()
     logger.info("Database created successfully")
 
+    return engine
+
+def load_data(engine):
     Session = sessionmaker(bind=engine)
+    logger = logging.getLogger(__name__)
     with Session() as session:
         try:
             load_movies_from_csv(session, CSV_FILES['movies'])
@@ -30,13 +37,8 @@ def init_db():
             logger.info("Ratings loaded successfully")
             load_tags_from_csv(session, CSV_FILES['tags'])
             logger.info("Tags loaded successfully")
-            # print("Data loading completed successfully")
         except Exception as e:
             print(f"Error loading data: {e}")
-        session.close()
-    
-    engine.dispose()
-
 
 def load_movies_from_csv(session, csv_path):
     df = pd.read_csv(csv_path)
@@ -134,7 +136,6 @@ def get_movies_as_documents():
             .subquery()
         )
 
-
         # Subquery to get tags as string
         tag_subq = (
             select(
@@ -183,11 +184,6 @@ def get_movies_as_documents():
                 "tags": tags
             }
             formatted_movies.append(formatted_movie)
-            # print(formatted_movies)
-            # logger.info(f"Added Formatted Movie: {formatted_movie}")
-        
-        # session.close()
-        # engine.dispose()
 
         return formatted_movies
 

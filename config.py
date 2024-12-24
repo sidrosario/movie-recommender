@@ -10,7 +10,6 @@ LOG_FILES = {
     'db' : f'{LOGS_DIR}/db.log',
 }
 USER_REQUESTS = [
-    "A mystery movie starring Bruce Willis",
     "A Christopher Nolan thriller movie",
     "A movie on drug addiction",
     "Something about the Holocaust",
@@ -20,6 +19,7 @@ USER_REQUESTS = [
     "an animated movie suitable for adults, with a complex plot, and deep character development.",
     "a musical, but not a romance or an animation, with catchy songs, and dance sequences.",
     "a murder mystery which is not scary",
+    "A mystery movie starring Bruce Willis",
     "An action packed fanstasy movie, with a great soundtrack",
     "a heartwarming comedy set with witty dialogue and charming characters.",
     "a movie about being a mother. Not a comedy",

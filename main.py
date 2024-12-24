@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import json
 import logging
 from openai import OpenAI
@@ -12,7 +13,24 @@ from vectordb import search_movies
 logging.basicConfig(filename='runs.log', encoding='utf-8', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+@dataclass
+class UserPreferences:
+    title: Optional[str]
+    genres: List[Tuple[str, int]]
+    actors: List[Tuple[str, int]]
+    era: Optional[str]
+    keywords: List[str]
 
+    @classmethod
+    def from_json(cls, data: dict) -> 'UserPreferences':
+        return cls(
+            title=data.get('title'),
+            genres=data.get('genres', []),
+            actors=data.get('actors', []),
+            era=data.get('era'),
+            keywords=data.get('keywords', [])
+        )
+    
 # StrIntTuple = Tuple[str, Literal[0, 1]]
 # class MovieTags(BaseModel):
 #     title: Optional[str] = None
@@ -86,6 +104,33 @@ Do not infer any information. Include a title only if it is a valid movie name.
 #         print(f"Error decoding JSON: {e}")
 #         return None
 
+def build_query(preferences: UserPreferences) -> tuple[str, str]:
+        positive_terms = []
+        negative_filters = []
+
+        # Add positive genres
+        if(preferences.genres):
+            positive_terms.extend(genre[0] for genre in preferences.genres if genre[1] == 1)
+        
+        # Add positive actors
+        if(preferences.actors): 
+            positive_terms.extend(actor[0] for actor in preferences.actors if actor[1] == 1)
+        
+        # Add keywords
+        positive_terms.extend(preferences.keywords)
+        
+        # Build negative filters
+        negative_genres = []
+        if(preferences.genres):
+            negative_genres = [genre[0] for genre in preferences.genres if genre[1] == 0]
+        if negative_genres:
+            negative_filters = [f"NOT genres IN ({genre})" for genre in negative_genres]
+
+        query = " ".join(positive_terms)
+        filters = " AND ".join(negative_filters)
+        
+        return query, filters
+
 def print_results(results):
     # Print results with error handling
     for result in results.get('hits', []):
@@ -120,57 +165,19 @@ def print_top_results(results, limit: int = 10) -> None:
         logger.error(f"Error printing results: {e}")
 
 def main():
-    
-    # Change the index for different user requests.
-    input_sentence = USER_REQUESTS[14]
-    
-    # Extract tags using OpenAI API
-    output = extract_tags_from_input(input_sentence)
-    print(output)
-    
     try:
-        output_json = json.loads(output)
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
-        return
-    
-    # Add the positive tags to user_keywords query. 
-    # {
-    # 'title': None
-    # 'genres': [('action', 1), ('comedy', 0)]
-    # 'actors:' [('Tom Cruise', 1), ('Penelope Cruz', 0)] 
-    # 'era': None
-    # 'keywords': ['good dialogues', 'twist in the ending']
-    # }
-    positive_genres = ""
-    negative_genres = []
-    if(output_json['genres']):
-        for genre in output_json['genres']:
-            if genre[1] == 1:
-                positive_genres += genre[0] + " "
-        for genre in output_json['genres']:
-            if genre[1] == 0:
-                negative_genres.append(genre[0])
-    
-    positive_actors = ""
-    negative_actors = []
-    if(output_json['actors']):
-        for actor in output_json['actors']:
-            if actor[1] == 1:
-                positive_actors += actor[0] + " "
-        for actor in output_json['actors']:
-            if actor[1] == 0:
-                negative_actors.append(actor[0])
+        # Change the index for different user requests.
+        input_sentence = USER_REQUESTS[1]
+        
+        # Extract tags using OpenAI API
+        output = extract_tags_from_input(input_sentence)
+        print(output) # Output from OpenAI
+        preferences = UserPreferences.from_json(json.loads(output))
 
-    user_keywords = f"{positive_genres} {positive_actors} {' '.join(output_json['keywords'])}"
-    filter = ""
-    for genre in negative_genres:
-        filter += f"NOT genres IN ({genre}) AND "
-    filter = filter.rsplit('AND', 1)[0].strip()
-    # print(filter)
-    try:
+        keywords, filter = build_query(preferences)
+
         # Search with debug info
-        results = search_movies(user_keywords,filter)
+        results = search_movies(keywords,filter)
         print_top_results(results)
         
     except Exception as e:

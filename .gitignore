@@ -4,6 +4,8 @@ __pycache__/
 static/
 templates/
 logs/
+tests/
+.vscode/
 movies.db
 runs.log
 user_requests.txt
