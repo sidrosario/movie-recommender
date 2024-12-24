@@ -220,7 +220,9 @@ def add_movies_links(recommendations):
             for movie in recommendations:
                 movie_id = int(movie['id'])
                 if movie_id in imdbID_dict:
-                    movie['imdb_url'] = 'https://www.imdb.com/title/tt' + f"{imdbID_dict[movie_id]:07d}"
+                    imdbID = f"{imdbID_dict[movie_id]:07d}"
+                    movie['imdb_id'] = imdbID
+                    movie['imdb_url'] = 'https://www.imdb.com/title/tt' + imdbID
 
             return recommendations
         
