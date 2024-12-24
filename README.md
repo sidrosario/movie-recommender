@@ -8,6 +8,7 @@ Natural language movie recommendation system using OpenAI GPT-3.5, Marqo vector 
 - Docker Desktop
 - Marqo
 - OpenAI API key
+- Flask (Optional: for Web interface)
 
 ## Installation
 ```bash
@@ -48,3 +49,10 @@ python main.py
 ```
 
 A collection of user input sentences are stored in config.py. Change the (index of) USER_REQUESTS in the main method of main.py for different requests. 
+
+For a Web UI, run:
+```bash
+python app.py
+```
+
+This is a Flask app and requires Flask to be installed.

@@ -3,7 +3,8 @@ DATASET_DIR = 'datasets/ml-latest-small'
 CSV_FILES = {
     'movies': f'{DATASET_DIR}/movies.csv',
     'ratings': f'{DATASET_DIR}/ratings.csv',
-    'tags': f'{DATASET_DIR}/tags.csv'
+    'tags': f'{DATASET_DIR}/tags.csv',
+    'links': f'{DATASET_DIR}/links.csv'
 }
 LOGS_DIR = 'logs'
 LOG_FILES = {
@@ -26,5 +27,6 @@ USER_REQUESTS = [
     "a romantic comedy about Christmas.",
     "a movie about being lonely"
 ]
+DB_LOCATION='sqlite:///movies.db'
 
 GENRES="Drama, War, Animation, Mystery, Fantasy, Children, Documentary, Film-Noir, Sci-Fi, Adventure, Horror, Western, Action, Crime, Comedy, Musical, Romance, Thriller."

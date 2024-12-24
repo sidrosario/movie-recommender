@@ -140,20 +140,21 @@ def print_results(results):
             logger.error(f"Missing key in result: {e}")
             print(f"Raw result: {result}")
 
-def print_top_results(results, limit: int = 10) -> None:
+def get_top_results(results, limit: int = 10) -> None:
     """Print top 'limit' results sorted by score"""
-    try:
-        # Get hits and sort by score
-        hits = results.get('hits', [])
-        sorted_hits = sorted(hits, 
-                           key=lambda x: float(x.get('_score', 0)), 
-                           reverse=True)
+    # Get hits and sort by score
+    hits = results.get('hits', [])
+    sorted_hits = sorted(hits, 
+                        key=lambda x: float(x.get('_score', 0)), 
+                        reverse=True)
+    
+    # Take top N results
+    return sorted_hits[:limit]
         
-        # Take top N results
-        top_hits = sorted_hits[:limit]
-        
+def print_results(top_hits):
         # Print formatted results
-        print("\nTop {} Recommendations:".format(limit))
+    try:
+        print("\nTop {} Recommendations:".format(len(top_hits)))
         print("-" * 50)
         for i, movie in enumerate(top_hits, 1):
             print(f"{i}. Movie: {movie.get('title', 'No title')}")
@@ -178,7 +179,25 @@ def main():
 
         # Search with debug info
         results = search_movies(keywords,filter)
-        print_top_results(results)
+        top_hits = get_top_results(results)
+        print_results(top_hits)
+        
+    except Exception as e:
+        logger.error(f"Error occurred: {e}")
+        raise
+
+def find_recommendations(input_sentence: str) -> List[str]:
+    try:
+        # Extract tags using OpenAI API
+        output = extract_tags_from_input(input_sentence)
+        print(output) # Output from OpenAI
+        preferences = UserPreferences.from_json(json.loads(output))
+
+        keywords, filter = build_query(preferences)
+
+        # Search with debug info
+        results = search_movies(keywords,filter)
+        return get_top_results(results)
         
     except Exception as e:
         logger.error(f"Error occurred: {e}")

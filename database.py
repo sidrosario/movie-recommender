@@ -3,8 +3,8 @@ import logging
 import pandas as pd
 from sqlalchemy import create_engine, select,func
 from sqlalchemy.orm import sessionmaker
-from config import CSV_FILES, LOG_FILES
-from models import Base, Movie, Genre, Rating, Tag
+from config import CSV_FILES, DB_LOCATION, LOG_FILES
+from models import Base, Link, Movie, Genre, Rating, Tag
 
 def create_logger():
     logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ def create_logger():
         logger.addHandler(handler)
     return logger
 
-def init_db(location='sqlite:///movies.db'):
+def init_db(location=DB_LOCATION):
     engine = create_engine(location)
     Base.metadata.create_all(engine)
     logger = create_logger()
@@ -37,6 +37,8 @@ def load_data(engine):
             logger.info("Ratings loaded successfully")
             load_tags_from_csv(session, CSV_FILES['tags'])
             logger.info("Tags loaded successfully")
+            load_links_from_csv(session, CSV_FILES['links'])
+            logger.info("Links loaded successfully")
         except Exception as e:
             print(f"Error loading data: {e}")
 
@@ -118,6 +120,19 @@ def load_tags_from_csv(session, csv_path):
 
     session.commit()
 
+def load_links_from_csv(session, csv_path):
+    df = pd.read_csv(csv_path)
+    
+    for _, row in df.iterrows():
+        link = Link(
+            movie_id=row['movieId'],
+            imdb_id=row['imdbId'],
+            tmdb_id=row['tmdbId']
+        )
+        session.add(link)
+
+    session.commit()
+
 def get_movies_as_documents():
     engine = create_engine('sqlite:///movies.db')
     Base.metadata.create_all(engine)
@@ -190,3 +205,25 @@ def get_movies_as_documents():
     except Exception as e:
         #logger.error(f"Error getting movies with metadata: {e}")
         return []
+    
+def add_movies_links(recommendations):
+    engine = create_engine(DB_LOCATION)
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    with Session() as session:
+        try:
+            # Query links table
+            links_query = session.query(Link).all()
+            imdbID_dict = {link.movie_id: link.imdb_id for link in links_query}
+            
+            for movie in recommendations:
+                movie_id = int(movie['id'])
+                if movie_id in imdbID_dict:
+                    movie['imdb_url'] = 'https://www.imdb.com/title/tt' + f"{imdbID_dict[movie_id]:07d}"
+
+            return recommendations
+        
+        except Exception as e:
+            print(f"Error adding IMDB links: {e}")
+            return []

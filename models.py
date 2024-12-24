@@ -35,6 +35,13 @@ class Tag(Base):
     tag = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.now(timezone.utc))
 
+class Link(Base):
+    __tablename__ = 'links'
+    
+    movie_id = Column(Integer, ForeignKey('movies.id'), primary_key=True)
+    imdb_id = Column(Integer)
+    tmdb_id = Column(Integer)
+
 # ...existing code...
 class Rating(Base):
     __tablename__ = 'ratings'
