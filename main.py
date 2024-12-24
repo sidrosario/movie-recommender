@@ -27,10 +27,6 @@ logger = logging.getLogger(__name__)
 #     era: Optional[str] = None
 #     keywords: Optional[List[str]] = None
 
-#Change the index to get different user requests. See config.py for the list of user requests.
-def get_user_input() -> str:
-    return USER_REQUESTS[3]
-
 def extract_tags_from_input(input_sentence: str) -> str:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     # prompt1 = "Extract the tags. Do not infer any information. Include title only if it is a valid movie name."
@@ -125,8 +121,8 @@ def print_top_results(results, limit: int = 10) -> None:
 
 def main():
     
-    # Get user input
-    input_sentence = get_user_input()
+    # Change the index for different user requests.
+    input_sentence = USER_REQUESTS[14]
     
     # Extract tags using OpenAI API
     output = extract_tags_from_input(input_sentence)

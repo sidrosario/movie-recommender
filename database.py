@@ -194,7 +194,3 @@ def get_movies_as_documents():
     except Exception as e:
         #logger.error(f"Error getting movies with metadata: {e}")
         return []
-
-
-if __name__ == '__main__':
-    init_db()

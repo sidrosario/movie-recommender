@@ -73,7 +73,6 @@ def add_movies_to_index(movies):
     logger.info('Documents added successfully')
     
 def search_movies(user_keywords,filter):
-    print(mq.index(index_name).get_stats())
     logger.info(f"Searching for q: {user_keywords}, filter: {filter}")
     if (filter):
         results = mq.index(index_name).search(

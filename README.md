@@ -6,8 +6,8 @@ Natural language movie recommendation system using OpenAI GPT-3.5, Marqo vector 
 ## Prerequisites
 - Python 3.8+
 - Docker Desktop
+- Marqo
 - OpenAI API key
-- Git
 
 ## Installation
 ```bash
@@ -46,3 +46,5 @@ Run application:
 ```bash
 python main.py
 ```
+
+A collection of user input sentences are stored in config.py. Change the (index of) USER_REQUESTS in the main method of main.py for different requests. 

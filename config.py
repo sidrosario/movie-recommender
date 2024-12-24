@@ -21,6 +21,10 @@ USER_REQUESTS = [
     "a musical, but not a romance or an animation, with catchy songs, and dance sequences.",
     "a murder mystery which is not scary",
     "An action packed fanstasy movie, with a great soundtrack",
-    "a heartwarming comedy set with witty dialogue and charming characters."
+    "a heartwarming comedy set with witty dialogue and charming characters.",
+    "a movie about being a mother. Not a comedy",
+    "a romantic comedy about Christmas.",
+    "a movie about being lonely"
 ]
+
 GENRES="Drama, War, Animation, Mystery, Fantasy, Children, Documentary, Film-Noir, Sci-Fi, Adventure, Horror, Western, Action, Crime, Comedy, Musical, Romance, Thriller."
