@@ -47,10 +47,10 @@ def load_movies_from_csv(session, csv_path):
     
     # Create genres first
     all_genres = set()
-    for genres_str in df['genres']:
-        if genres_str == '(no genres listed)':
+    for genres_combined in df['genres']:
+        if genres_combined == '(no genres listed)':
             continue
-        all_genres.update(genres_str.split('|'))
+        all_genres.update(genres_combined.split('|'))
     
     genre_dict = {}
     for genre_name in all_genres:
@@ -121,6 +121,29 @@ def load_tags_from_csv(session, csv_path):
     session.commit()
 
 def load_links_from_csv(session, csv_path):
+    """Load movie links data from CSV file into SQLite database.
+
+    Args:
+        session (Session): SQLAlchemy session object
+        csv_path (str): Path to the CSV file containing movie links data
+
+    Returns:
+        None
+
+    Raises:
+        FileNotFoundError: If CSV file does not exist
+        pd.errors.EmptyDataError: If CSV file is empty
+        SQLAlchemyError: If database operation fails
+
+    Example:
+        >>> from sqlalchemy.orm import Session
+        >>> session = Session()
+        >>> load_links_from_csv(session, 'links.csv')
+    
+    Notes:
+        CSV file should have columns: movieId, imdbId, tmdbId
+        IMDB IDs are stored without 'tt' prefix
+    """
     df = pd.read_csv(csv_path)
     
     for _, row in df.iterrows():
@@ -132,6 +155,7 @@ def load_links_from_csv(session, csv_path):
         session.add(link)
 
     session.commit()
+
 
 def get_movies_as_documents():
     engine = create_engine('sqlite:///movies.db')
@@ -206,7 +230,7 @@ def get_movies_as_documents():
         #logger.error(f"Error getting movies with metadata: {e}")
         return []
     
-def add_movies_links(recommendations):
+def attach_imdb_links(recommendations):
     engine = create_engine(DB_LOCATION)
     Base.metadata.create_all(engine)
 
