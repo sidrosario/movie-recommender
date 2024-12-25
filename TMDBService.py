@@ -19,7 +19,7 @@ class TMDBService:
             imdb_id = int(imdb_id.replace('tt', ''))
             row = self.links_df[self.links_df['imdbId'] == imdb_id]
             if not row.empty:
-                return row['tmdbId'].iloc[0]
+                return int(row['tmdbId'].iloc[0])
             return None
         except Exception as e:
             print(f"Error converting IMDB ID {imdb_id}: {e}")
