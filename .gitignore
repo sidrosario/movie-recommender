@@ -5,7 +5,9 @@ static/
 templates/
 logs/
 tests/
+.env
 .vscode/
 movies.db
 runs.log
 user_requests.txt
+augmentdb.py

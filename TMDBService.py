@@ -25,7 +25,7 @@ class TMDBService:
             print(f"Error converting IMDB ID {imdb_id}: {e}")
             return None
 
-    def get_movie_details(self, tmdb_id: int) -> Optional[dict]:
+    def get_movie_poster_rating_overview(self, tmdb_id: int) -> Optional[dict]:
         try:
             movie = self.movie.details(tmdb_id)
             if movie:
@@ -37,4 +37,73 @@ class TMDBService:
             return None
         except Exception as e:
             print(f"Error fetching details for TMDB ID {tmdb_id}: {e}")
+            return None
+        
+    # def get_movie_overview(self, tmdb_id: int) -> Optional[str]:
+    #     try:
+    #         movie = self.movie.details(tmdb_id)
+    #         if movie:
+    #             return movie.overview if movie.overview else None
+    #         return None
+    #     except Exception as e:
+    #         print(f"Error fetching overview for TMDB ID {tmdb_id}: {e}")
+    #         return None
+    
+    # def get_movie_actors(self, tmdb_id: int) -> Optional[list]:
+    #     try:
+    #         credits = self.movie.credits(tmdb_id)
+    #         if credits:
+    #             return [actor['name'] for actor in credits['cast'][:5]]
+    #         return None
+    #     except Exception as e:
+    #         print(f"Error fetching actors for TMDB ID {tmdb_id}: {e}")
+    #         return None
+    
+    # def get_movie_director(self, tmdb_id: int) -> Optional[str]:
+    #     try:
+    #         credits = self.movie.credits(tmdb_id)
+    #         if credits:
+    #             for crew in credits['crew']:
+    #                 if crew['job'] == 'Director':
+    #                     return crew['name']
+    #         return None
+    #     except Exception as e:
+    #         print(f"Error fetching director for TMDB ID {tmdb_id}: {e}")
+    #         return None
+    
+    def get_overview_actors_director(self, tmdb_id):
+        actors, director, overview = None, None, None
+        try:
+            movie = self.movie.details(tmdb_id)
+            credits = self.movie.credits(tmdb_id)
+            
+            if movie:
+                overview = movie.overview if movie.overview else None
+            
+            if credits:
+                actors = []
+                for actor in credits['cast']:
+                    actors.append(actor['name'])
+                    if (len(actors) == 5):
+                        break
+                    
+                # actors = [actor['name'] for actor in credits['cast'][:5]]
+                for crew in credits['crew']:
+                    if crew['job'] == 'Director':
+                        director = crew['name']
+                        break
+                
+        except Exception as e:
+            print(f"Error fetching details for TMDB ID {tmdb_id}: {e}")
+
+        return overview, actors, director
+    
+    def get_movie_keywords(self,tmdb_id: int) -> Optional[list]:
+        try:
+            keywords = self.movie.keywords(tmdb_id)
+            if keywords:
+                return [keyword['name'] for keyword in keywords['keywords']]
+            return None
+        except Exception as e:
+            print(f"Error fetching keywords for TMDB ID {tmdb_id}: {e}")
             return None

@@ -5,12 +5,13 @@ from main import find_recommendations
 
 app = Flask(__name__)
 
+
 def add_movie_details(recommendations):
     tm = TMDBService()
     for movie in recommendations:
         tmdb_id = tm.get_tmdb_id(movie['imdb_id'])
         if tmdb_id:
-            details = tm.get_movie_details(tmdb_id)
+            details = tm.get_movie_poster_rating_overview(tmdb_id)
             if details:
                 movie.update(details)
 

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, Float, String, DateTime, Table, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, DateTime, Table, ForeignKey, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -17,6 +17,9 @@ class Movie(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     year = Column(Integer)
+    director = Column(String)
+    overview = Column(Text)
+    popularity = Column(Float)
     genres = relationship('Genre', secondary=movie_genre, back_populates='movies')
 
 class Genre(Base):
@@ -26,14 +29,19 @@ class Genre(Base):
     genre_name = Column(String, nullable=False)
     movies = relationship('Movie', secondary=movie_genre, back_populates='genres')
 
-class Tag(Base):
-    __tablename__ = 'tags'
+# Movie keywords from the TMDB DB
+class Keyword(Base):
+    __tablename__ = 'keywords'
     
-    tag_id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)
+    keyword_id = Column(Integer, primary_key=True)
     movie_id = Column(Integer, ForeignKey('movies.id'), nullable=False)
-    tag = Column(String, nullable=False)
-    timestamp = Column(DateTime, default=datetime.now(timezone.utc))
+    keywords = Column(Text, nullable=False)
+class Actor(Base):
+    __tablename__ = 'actors'
+    
+    actor_id = Column(Integer, primary_key=True)
+    actor_name = Column(String, nullable=False)
+    movie_id = Column(Integer, ForeignKey('movies.id'), nullable=False)
 
 class Link(Base):
     __tablename__ = 'links'
@@ -41,13 +49,4 @@ class Link(Base):
     movie_id = Column(Integer, ForeignKey('movies.id'), primary_key=True)
     imdb_id = Column(Integer)
     tmdb_id = Column(Integer)
-
-# ...existing code...
-class Rating(Base):
-    __tablename__ = 'ratings'
-    
-    rating_id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)
-    movie_id = Column(Integer, ForeignKey('movies.id'), nullable=False)
-    rating = Column(Float, nullable=False)
-    timestamp = Column(DateTime, default=datetime.now(timezone.utc))
+    poster_path = Column(String)

@@ -6,7 +6,7 @@ import os
 from pydantic import Field, ValidationError, BaseModel
 from typing import List, Literal, Optional, Tuple
 
-from config import GENRES, USER_REQUESTS
+from config import GENRES, NUM_SEARCH_RESULTS, USER_REQUESTS
 from vectordb import search_movies
 
  # Setup logging
@@ -31,20 +31,6 @@ class UserPreferences:
             keywords=data.get('keywords', [])
         )
     
-# StrIntTuple = Tuple[str, Literal[0, 1]]
-# class MovieTags(BaseModel):
-#     title: Optional[str] = None
-#     actors: Optional[List[StrIntTuple]] = Field(
-#         default=None,
-#         description="List of (actor, intent) tuples where intent is 0 (actor present in movie) or 1 (actor not present in movie)"
-#     )
-#     genres: Optional[List[StrIntTuple]] = Field(
-#         default=None,
-#         description="List of (genre, intent) tuples where intent is 0 (movie not of this genre) or 1 (movie of this genre)"
-#     )
-#     era: Optional[str] = None
-#     keywords: Optional[List[str]] = None
-
 def extract_tags_from_input(input_sentence: str) -> str:
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     # prompt1 = "Extract the tags. Do not infer any information. Include title only if it is a valid movie name."
@@ -90,44 +76,36 @@ Do not infer any information. Include a title only if it is a valid movie name.
     result = completion.choices[0].message.content
     return result
 
-
-# def validate_tags(json_string: str) -> Optional[MovieTags]:
-#     try:
-#         json_data = json.loads(json_string)
-#         # validated_data = MovieTags(**json_data)
-#         #print("Valid JSON:", validated_data.model_dump())
-#         return validated_data
-#     except ValidationError as e:
-#         print(f"Error validating JSON: {e}")
-#         return None
-#     except json.JSONDecodeError as e:
-#         print(f"Error decoding JSON: {e}")
-#         return None
-
-def build_query(preferences: UserPreferences) -> tuple[str, str]:
+def construct_user_query(preferences: UserPreferences) -> tuple[str, str]:
         positive_terms = []
-        negative_filters = []
+        filters = []
+
+        if preferences.title:
+            positive_terms.append(preferences.title)
+
+        # Add keywords
+        if (preferences.keywords):
+            positive_terms.extend(preferences.keywords)
 
         # Add positive genres
         if(preferences.genres):
             positive_terms.extend(genre[0] for genre in preferences.genres if genre[1] == 1)
+            filters.extend(f"genres IN ({genre[0]})" for genre in preferences.genres if genre[1] == 1)
         
         # Add positive actors
         if(preferences.actors): 
             positive_terms.extend(actor[0] for actor in preferences.actors if actor[1] == 1)
-        
-        # Add keywords
-        positive_terms.extend(preferences.keywords)
+            filters.extend(f"actors:({actor[0]})" for actor in preferences.actors if actor[1] == 1)
         
         # Build negative filters
         negative_genres = []
         if(preferences.genres):
             negative_genres = [genre[0] for genre in preferences.genres if genre[1] == 0]
         if negative_genres:
-            negative_filters = [f"NOT genres IN ({genre})" for genre in negative_genres]
+            filters.extend([f"NOT genres IN ({genre})" for genre in negative_genres])
 
         query = " ".join(positive_terms)
-        filters = " AND ".join(negative_filters)
+        filters = " AND ".join(filters)
         
         return query, filters
 
@@ -140,12 +118,17 @@ def print_results(results):
             logger.error(f"Missing key in result: {e}")
             print(f"Raw result: {result}")
 
-def get_top_results(results, limit: int = 10) -> None:
+def get_top_results(results, limit = NUM_SEARCH_RESULTS) -> None:
     """Print top 'limit' results sorted by score"""
     # Get hits and sort by score
     hits = results.get('hits', [])
+    # update the score of a movie to 0.3*score + 0.7*popularity
+    
+    # map(lambda x: x.update({' score': x.get('_score',0)*0.3 + (movie_ratings[x.get('id',0)]/5.0)*0.7}),hits)
+    # map(hits, lambda x: x.update({'_score': x.get('_score',0)*0.3+})
+    print("LENGTH OF HITS:",len(hits))
     sorted_hits = sorted(hits, 
-                        key=lambda x: float(x.get('_score', 0)), 
+                        key=lambda x: float(x.get('popularity', 0)), 
                         reverse=True)
     
     # Take top N results
@@ -159,8 +142,8 @@ def print_results(top_hits):
         for i, movie in enumerate(top_hits, 1):
             print(f"{i}. Movie: {movie.get('title', 'No title')}")
             print(f"   Score: {movie.get('_score', 'No score'):.3f}")
-            print(f"   Genres: {movie.get('genres', 'None')}")
-            print(f"   Tags: {movie.get('tags', 'None')}\n")
+            # print(f"   Genres: {movie.get('genres', 'None')}")
+            # print(f"   Tags: {movie.get('tags', 'None')}\n")
             
     except Exception as e:
         logger.error(f"Error printing results: {e}")
@@ -168,18 +151,8 @@ def print_results(top_hits):
 def main():
     try:
         # Change the index for different user requests.
-        input_sentence = USER_REQUESTS[1]
-        
-        # Extract tags using OpenAI API
-        output = extract_tags_from_input(input_sentence)
-        print(output) # Output from OpenAI
-        preferences = UserPreferences.from_json(json.loads(output))
-
-        keywords, filter = build_query(preferences)
-
-        # Search with debug info
-        results = search_movies(keywords,filter)
-        top_hits = get_top_results(results)
+        input_sentence = USER_REQUESTS[1]        
+        top_hits = find_recommendations(input_sentence)
         print_results(top_hits)
         
     except Exception as e:
@@ -190,14 +163,17 @@ def find_recommendations(input_sentence: str) -> List[str]:
     try:
         # Extract tags using OpenAI API
         output = extract_tags_from_input(input_sentence)
-        print(output) # Output from OpenAI
+        logger.info(output) # Output from OpenAI
+        print(output)
         preferences = UserPreferences.from_json(json.loads(output))
 
-        keywords, filter = build_query(preferences)
+        keywords, filter = construct_user_query(preferences)
 
         # Search with debug info
         results = search_movies(keywords,filter)
-        return get_top_results(results)
+        top_hits = get_top_results(results)
+        print_results(top_hits)
+        return top_hits
         
     except Exception as e:
         logger.error(f"Error occurred: {e}")

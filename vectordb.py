@@ -2,6 +2,7 @@ import logging
 import math
 import marqo
 from tqdm import tqdm
+from config import NUM_SEARCH_RESULTS
 from database import get_movies_as_documents
 
 
@@ -9,12 +10,15 @@ settings = {
     "type": "structured",
     "allFields": [
         {"name": "id", "type": "text", "features": ["lexical_search"]},
-        {"name": "title_genres_tags", "type": "text", "features": ["lexical_search"]},
+        {"name": "text", "type": "text", "features": ["lexical_search"]},
         {"name": "title", "type": "text", "features": ["lexical_search"]},
         {"name": "genres", "type": "array<text>", "features": ["filter","lexical_search"]},
-        {"name": "tags", "type": "array<text>", "features": ["filter","lexical_search"]},
+        {"name": "actors", "type": "array<text>", "features": ["filter","lexical_search"]},
+        {"name": "director", "type": "text", "features": ["lexical_search"]},
+        {"name": "year", "type": "text", "features": ["lexical_search"]},
+        {"name": "popularity", "type": "float"},
     ],
-    "tensorFields": ["title_genres_tags"],
+    "tensorFields": ["text"],
 }
 
 
@@ -28,7 +32,7 @@ logger.setLevel(logging.INFO)
 if not logger.handlers:
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    handler.setFormatter(formatter) 
+    handler.setFormatter(formatter)
     logger.addHandler(handler)
 
 def init_marqo_db():    
@@ -64,8 +68,7 @@ def add_movies_to_index(movies):
         try:
             result = mq.index(index_name).add_documents(
                 documents=batch,
-                client_batch_size=batch_size
-            )
+                client_batch_size=batch_size)
         except Exception as e:
             print(f"Error processing batch {i//batch_size + 1}: {str(e)}")
             continue
@@ -77,7 +80,8 @@ def search_movies(user_keywords,filter):
     if (filter):
         results = mq.index(index_name).search(
         q=user_keywords,
-        filter_string=filter
+        filter_string=filter,
+        limit = NUM_SEARCH_RESULTS
         )
     else:
         results = mq.index(index_name).search(user_keywords)

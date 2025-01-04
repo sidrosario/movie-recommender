@@ -4,5 +4,4 @@ from vectordb import init_marqo_db
 
 engine=init_db()
 load_data(engine)
-
 # init_marqo_db()
