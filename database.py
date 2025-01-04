@@ -232,43 +232,6 @@ def get_movies_as_documents():
         # Example: [{"id": "1", "title_genres_tags": "Toy Story Animation Children's", "title": "Toy Story", "genres": ["Animation", "Children's"], "tags": []}]
         return format_movies(relevant_movie_fields)
 
-def get_movies_with_title_genres_tags(session):
-        # Subquery to get genres as string
-        genre_subq = (
-            select(
-                Movie.id,
-                func.group_concat(Genre.genre_name, ' ').label('genres')
-            )
-            .join(Movie.genres)
-            .group_by(Movie.id)
-            .subquery()
-        )
-
-        # Subquery to get tags as string
-        tag_subq = (
-            select(
-                Movie.id,
-                func.group_concat(Tag.tag, ' ').label('tags')
-            )
-            .join(Tag)
-            .group_by(Movie.id)
-            .subquery()
-        )
-
-        # Main query combining movies with genres and tags
-        query = (
-            select(
-                Movie.id,
-                Movie.title,
-                genre_subq.c.genres,
-                tag_subq.c.tags
-            )
-            .join(genre_subq, Movie.id == genre_subq.c.id, isouter=True)
-            .join(tag_subq, Movie.id == tag_subq.c.id, isouter=True)
-        )
-
-        return session.execute(query)
-
 def format_movies(results)-> List[Dict[str, Any]]:
     """Format database results into movie documents for search indexing.
     
