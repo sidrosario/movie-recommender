@@ -278,6 +278,7 @@ def format_movies(results)-> List[Dict[str, Any]]:
         if(movie.genres):
             genres = movie.genres.split(" ")
             vector_field+= " "+movie.genres
+        actors =[]
         if(movie.actors):
             actors = movie.actors.split(",")
             vector_field+= " "+movie.actors
